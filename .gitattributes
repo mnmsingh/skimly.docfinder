@@ -1,0 +1,9 @@
+# Vendored third-party assets: check out byte-for-byte, never line-ending
+# converted. The Tesseract cores are .js files, so Git treats them as text by
+# default and would rewrite their line endings on a Windows clone — they carry
+# an embedded WebAssembly payload, so that must not happen.
+public/tesseract/** -text
+public/pdfjs/** -text
+
+# Generated; keep it out of diffs and language stats.
+package-lock.json -diff linguist-generated
