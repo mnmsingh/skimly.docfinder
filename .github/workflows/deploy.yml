@@ -83,3 +83,30 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
+
+      # deploy-pages succeeding only means the artifact was accepted. If the
+      # repository's Pages source is set to "Deploy from a branch" rather than
+      # "GitHub Actions", the site silently serves the repository root instead
+      # — the raw index.html, which references /src/main.tsx and loads nothing.
+      # That has happened on this repo, and the deploy still reported success,
+      # so check what the site actually serves.
+      - name: Verify the live site serves the built app
+        run: |
+          url="${{ steps.deployment.outputs.page_url }}"
+          echo "Checking $url"
+          for attempt in $(seq 1 12); do
+            body=$(curl -fsSL --max-time 30 "$url" || true)
+            if printf '%s' "$body" | grep -q '/skimly.docfinder/assets/'; then
+              echo "OK: the live site is serving the built app."
+              exit 0
+            fi
+            if printf '%s' "$body" | grep -q '/src/main.tsx'; then
+              echo "::warning::Attempt $attempt: serving unbuilt source."
+            else
+              echo "Attempt $attempt: not serving the built app yet."
+            fi
+            sleep 15
+          done
+          echo "::error::$url is not serving the built app after ~3 minutes."
+          echo "Check Settings > Pages > Source is 'GitHub Actions', not 'Deploy from a branch'."
+          exit 1
