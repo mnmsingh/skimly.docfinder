@@ -68,10 +68,6 @@ from a domain root (Netlify, Cloudflare Pages, Vercel, S3) instead needs
 Note the repo carries ~15 MB of vendored binaries in `public/`, so CI checkout
 is slower than the source size alone suggests.
 
-## Project Docs
-
-See [CLAUDE.md](./CLAUDE.md) for development principles and coding standards, [PROJECT_PLAN.md](./PROJECT_PLAN.md) for the feature roadmap, and [TASKS.md](./TASKS.md) / [PROGRESS.md](./PROGRESS.md) for current status.
-
 ### If the live site shows a blank page or the wrong content
 
 Check **Settings → Pages → Source** is set to **GitHub Actions**, not *Deploy
@@ -81,3 +77,7 @@ nothing — while the deploy workflow still reports success. This has happened o
 this repository once. The workflow's final step now fetches the live URL and
 fails the run if it isn't serving the built app, so this shows up as a red
 build rather than a silently broken site.
+
+## Project Docs
+
+See [CLAUDE.md](./CLAUDE.md) for development principles and coding standards, [PROJECT_PLAN.md](./PROJECT_PLAN.md) for the feature roadmap, and [TASKS.md](./TASKS.md) / [PROGRESS.md](./PROGRESS.md) for current status.
