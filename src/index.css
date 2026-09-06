@@ -1,0 +1,75 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /* Design-token colors as "R G B" triplets so Tailwind's rgb(var(...) / <alpha-value>)
+     opacity modifiers work (e.g. bg-primary/10). Swapped wholesale under .dark. */
+  :root {
+    --color-primary: 79 70 229;
+    --color-primary-hover: 67 56 202;
+    --color-surface: 255 255 255;
+    --color-background: 248 250 252;
+    --color-border: 226 232 240;
+    --color-border-strong: 203 213 225;
+    --color-muted: 100 116 139;
+    --color-success: 5 150 105;
+    --color-warning: 217 119 6;
+    --color-error: 220 38 38;
+  }
+
+  .dark {
+    --color-primary: 129 140 248;
+    --color-primary-hover: 165 180 252;
+    --color-surface: 30 41 59;
+    --color-background: 15 23 42;
+    --color-border: 51 65 85;
+    --color-border-strong: 71 85 105;
+    --color-muted: 148 163 184;
+    --color-success: 52 211 153;
+    --color-warning: 251 191 36;
+    --color-error: 248 113 113;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-background text-slate-900 antialiased transition-colors duration-150 dark:text-slate-100;
+  }
+
+  /* Consistent, visible keyboard focus ring across all interactive elements. */
+  :focus-visible {
+    @apply outline-none ring-2 ring-primary ring-offset-2 ring-offset-background;
+  }
+}
+
+@layer components {
+  /* Reusable button primitives so every action in the app looks and behaves
+     the same way (default/hover/active/focus/disabled states included). */
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-medium
+      transition-colors duration-150 disabled:pointer-events-none disabled:opacity-50;
+  }
+  .btn-primary {
+    @apply btn bg-primary text-white hover:bg-primary-hover active:bg-primary-hover;
+  }
+  .btn-secondary {
+    @apply btn border border-border bg-surface text-slate-700 hover:bg-slate-50 active:bg-slate-100
+      dark:text-slate-200 dark:hover:bg-slate-800 dark:active:bg-slate-700;
+  }
+  .btn-ghost {
+    @apply btn text-muted hover:bg-slate-100 hover:text-slate-800 dark:hover:bg-slate-800 dark:hover:text-slate-100;
+  }
+
+  /* Lightweight card: subtle border, small radius, minimal shadow. */
+  .card {
+    @apply rounded-card border border-border bg-surface shadow-card;
+  }
+
+  .badge {
+    @apply inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium;
+  }
+}
