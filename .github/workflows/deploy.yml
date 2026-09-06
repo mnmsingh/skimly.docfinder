@@ -1,0 +1,85 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  # Allows re-deploying the current main without pushing a commit.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Never cancel a deploy that's already publishing — a half-applied deploy
+# would leave the live site inconsistent. Queue the next run instead.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      # Also type-checks: the build script is `tsc -b && vite build`.
+      - name: Build
+        run: npm run build
+
+      # Guards the one setting that silently breaks this deployment: the app is
+      # served from https://<user>.github.io/skimly.docfinder/, so vite's `base`
+      # must match. If it were reset to '/', the page would load and every asset
+      # would 404, which is easy to miss until someone opens the live site.
+      - name: Check asset base path
+        run: |
+          if ! grep -q '"/skimly.docfinder/assets/' dist/index.html; then
+            echo "::error::dist/index.html does not reference /skimly.docfinder/assets/."
+            echo 'Check the `base` option in vite.config.ts - it must match the repository name.'
+            grep -o 'src="[^"]*"' dist/index.html || true
+            exit 1
+          fi
+
+      # The OCR engine and language data are served from the site itself, so a
+      # missing vendored asset breaks scanned PDFs only at runtime. Fail here
+      # instead, where it's visible.
+      - name: Check vendored OCR assets shipped
+        run: |
+          for file in \
+            dist/tesseract/core/tesseract-core-simd-lstm.wasm.js \
+            dist/tesseract/lang/eng.traineddata.gz \
+            dist/tesseract/lang/hin.traineddata.gz \
+            dist/tesseract/lang/mar.traineddata.gz
+          do
+            if [ ! -s "$file" ]; then
+              echo "::error::Missing or empty: $file (run 'npm run vendor:tesseract')"
+              exit 1
+            fi
+          done
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
