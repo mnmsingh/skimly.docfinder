@@ -41,7 +41,32 @@ upgrading `tesseract.js` or `tesseract.js-core`.
 
 ## Deployment
 
-Static build via Vite, deployed to GitHub Pages via a GitHub Actions workflow on push to `main`. No environment variables or secrets are required — there is no backend.
+**Live at https://mnmsingh.github.io/skimly.docfinder/**
+
+Static build via Vite, published to GitHub Pages by
+[`.github/workflows/deploy.yml`](./.github/workflows/deploy.yml) on every push
+to `main` (or manually via *Actions → Deploy to GitHub Pages → Run workflow*).
+No environment variables or secrets are required — there is no backend, and
+`GITHUB_TOKEN` is provided automatically.
+
+The workflow uses the *Pages from GitHub Actions* source, so the built site is
+uploaded as an artifact and never committed to a `gh-pages` branch. Before
+publishing it checks two things that would otherwise only surface once someone
+opened the live site: that `dist/index.html` still references
+`/skimly.docfinder/`, and that the vendored Tesseract assets actually shipped.
+
+### If you rename or fork the repository
+
+`base` in [`vite.config.ts`](./vite.config.ts) must match the repository name,
+because a GitHub Pages project site is served from
+`https://<user>.github.io/<repo>/`. Change the repo name without changing
+`base` and the page will load while every asset 404s — the workflow's asset
+base-path check is there to catch exactly that. Hosting anywhere that serves
+from a domain root (Netlify, Cloudflare Pages, Vercel, S3) instead needs
+`base: '/'`.
+
+Note the repo carries ~15 MB of vendored binaries in `public/`, so CI checkout
+is slower than the source size alone suggests.
 
 ## Project Docs
 

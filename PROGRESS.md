@@ -55,10 +55,28 @@
 - Also caught and fixed a bundle regression the build itself flagged: importing the preference type from `lib/ocr.ts` made the UI statically depend on it, pulling Tesseract.js into the initial bundle (497 kB). Split the type and the option list into `src/types/ocrLanguage.ts`; the entry chunk is back to 189 kB / 62 kB gzip and Tesseract.js loads only for a document that needs OCR.
 
 
-**Next task:** GitHub Actions workflow for GitHub Pages deployment (note the repo now carries ~15 MB of vendored binaries in `public/`); re-measure against the user's real 39-page Maharashtra voter roll — see [TASKS.md](./TASKS.md).
+- User asked to put the project in git, then how to host it. The repository had been initialised in an early session but had **never been committed** — every file was still untracked, so "upload it in git" meant an initial import, not an incremental commit.
+- Committed the project in two commits on `main` (renamed from `master`, since README.md and CLAUDE.md both say deployment happens on push to `main` and the branch had no commits yet to disturb): the app itself, then a `.gitattributes`.
+- The `.gitattributes` was not housekeeping. Git's "LF will be replaced by CRLF" warnings covered `public/tesseract/core/*.wasm.js` — those are `.js` files carrying an embedded WebAssembly payload, so Git treats them as text and would rewrite their line endings on any Windows clone, corrupting the OCR engine. Verified the committed blobs still hash-match the originals in `node_modules`, then marked `public/tesseract/**` and `public/pdfjs/**` as `-text` so checkout stays byte-for-byte.
+- Pushed to https://github.com/mnmsingh/skimly.docfinder. There was no remote and no `gh` CLI, so this needed the user: confirmed the URL, established that credentials were already cached (Windows Credential Manager, `username=mnmsingh`), and found the repository itself simply didn't exist — `git ls-remote` returned "Repository not found" even with working auth, and the account showed 0 public repos. Asked before creating it, because public vs private is the user's call and, on a free account, determines whether Pages can serve the site at all. Created it public via the API on their instruction.
+- Hosting: implemented what the project had already committed to rather than surveying options — CLAUDE.md and README specified GitHub Pages via Actions on push to `main`, and `vite.config.ts` was already set to `base: '/skimly.docfinder/'` to match.
+  - `.github/workflows/deploy.yml` uses the Pages-from-Actions source (`upload-pages-artifact` + `deploy-pages`), so the built site is never committed to a `gh-pages` branch. Node 20, `npm ci` with cache, lint, then the type-checking build.
+  - Added two guards against `dist/` before publishing, both for failures that are invisible until someone opens the live site: that `index.html` still references `/skimly.docfinder/` (if vite's `base` were ever reset to `/`, the page loads and every asset 404s), and that the vendored Tesseract cores and language data actually shipped (a missing one breaks scanned PDFs at runtime only). Dry-ran both guard scripts against the real `dist/` locally before pushing.
+  - Caught a bug in the workflow before committing it: backticks inside a double-quoted `echo` in the guard script would have been shell command substitution, trying to run `base` as a command.
+- Enabled Pages via the API with `build_type: workflow`. The first workflow run had been triggered by the push *before* Pages existed, but it completed successfully anyway — both jobs green, including both new guards.
+- **Verified the deployment rather than trusting the green check.** A passing workflow only proves the artifact uploaded. Ran the browser harness against the live site:
+  - All runtime assets serve correctly from the Pages origin (`mar.traineddata.gz` 1,013,450 bytes, the simd-lstm wasm core 3,899,472 bytes, pdf.js standard fonts).
+  - 8-page scanned Marathi PDF: OCR ran on the live site and all three searches — Devanagari, a Devanagari name, and the Latin line — hit across all 8 pages. 6.6s, versus 2.8s locally; the difference is the first-visit download of the wasm core and language packs over the internet, which a repeat visit avoids via the HTTP and IndexedDB caches.
+  - Text-layer Marathi PDF: 0.5s, both scripts searchable.
+  - Zero requests to any third-party CDN in either run, confirming the vendoring holds in production — the app's "nothing leaves your device" claim is now literally true on the live site.
+
+
+**Next task:** responsive + accessibility pass over the search UI including the new `OcrLanguageSelect`; re-measure OCR against the user's real 39-page Maharashtra voter roll — see [TASKS.md](./TASKS.md).
 
 **Known issues:**
 - Text-layer parsing and page rendering still run on the main thread; OCR itself no longer does.
 - PDF extraction of Devanagari can drop/garble characters within complex conjunct clusters, traced to how the source PDF's font was subset/mapped to Unicode. Not fixable client-side; DOCX is unaffected.
 - OCR remains the slowest thing the app does — ~3x faster than before, but a many-page scanned document still takes tens of seconds on the CPU in the browser.
 - Forcing a document language the document isn't in loses that document's text entirely, with no warning. Correct for an explicit override, but unguarded.
+- The repository is public, so the source is publicly visible. Required for GitHub Pages on a free account.
+- `vite.config.ts`'s `base` is coupled to the repository name; renaming the repo without updating it breaks every asset on the live site. The deploy workflow guards against this, but only at build time.

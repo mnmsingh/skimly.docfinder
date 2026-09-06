@@ -105,3 +105,24 @@ All notable changes to this project are documented here.
   existed. One does: `https://tessdata.projectnaptha.com/4.0.0_fast`, which
   Tesseract.js's own `docs/performance.md` recommends. The earlier check looked
   only at the `@tesseract.js-data` npm packages, which don't carry it.
+
+### Added
+- Published to GitHub: https://github.com/mnmsingh/skimly.docfinder (public,
+  default branch `main`).
+- `.gitattributes` marking `public/tesseract/**` and `public/pdfjs/**` as
+  binary. The Tesseract WebAssembly cores are `.js` files carrying an embedded
+  wasm payload, so Git treated them as text and would have rewritten their line
+  endings on a Windows clone, corrupting them.
+- `.github/workflows/deploy.yml` — builds and publishes to GitHub Pages on push
+  to `main`, using the Pages-from-Actions source rather than a `gh-pages`
+  branch, so the built site is never committed. Runs lint and the type-checking
+  build, then two guards against `dist/` before publishing, since both failures
+  are invisible until the live site is opened: that `index.html` still
+  references `/skimly.docfinder/` (vite's `base` must match the repository
+  name, or every asset 404s), and that the vendored Tesseract cores and
+  language data actually shipped.
+- **Live at https://mnmsingh.github.io/skimly.docfinder/**, verified end to end
+  against the deployed site: an 8-page scanned Marathi PDF OCRs and becomes
+  searchable in both scripts (6.6s cold, the extra time over local being the
+  first-visit download of the wasm core and language packs), a text-layer
+  Marathi PDF parses in 0.5s, and no request leaves the Pages origin.

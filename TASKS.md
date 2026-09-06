@@ -27,9 +27,11 @@ Tracks the current task breakdown. Update as work progresses — check items off
 - [x] Vendor Tesseract's wasm cores + trained data into `public/tesseract/` (`npm run vendor:tesseract`) so OCR makes no CDN requests
 - [x] "Scanned document language" selector (Auto / English / हिन्दी / मराठी / Mixed) as an override for the auto-detection
 
+- [x] Publish to git: initial commit on `main`, pushed to https://github.com/mnmsingh/skimly.docfinder (public). Added `.gitattributes` so the vendored Tesseract cores — `.js` files carrying an embedded wasm payload — aren't line-ending mangled on a Windows clone
+- [x] GitHub Actions workflow for GitHub Pages deployment, live at https://mnmsingh.github.io/skimly.docfinder/. Uses the Pages-from-Actions source (no `gh-pages` branch) and guards the vite `base` path and the presence of the vendored OCR assets before publishing
+
 ## Up Next (highest priority first)
 - [ ] Responsive + accessibility pass over the new search UI specifically, now including the new `OcrLanguageSelect` control (spot-checked during build; no formal a11y audit yet)
-- [ ] Set up GitHub Actions workflow for GitHub Pages deployment. Note the repo now carries ~15 MB of vendored binaries in `public/` — check this stays within Pages' limits and doesn't slow the workflow unacceptably
 - [ ] Evaluate moving pdf.js *text extraction and page rendering* to a Web Worker. OCR itself now runs off the main thread, but rendering a scanned page to a canvas still doesn't (pdf.js needs a real canvas; `OffscreenCanvas` would be the route)
 - [ ] Re-measure against the user's real 39-page Maharashtra voter roll. The 3x figure comes from a synthetic dense fixture; a real scan (noise, skew, photos) may behave differently, and it's the document the complaint originated from
 
